@@ -47,6 +47,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Required for the USF step sensor service in the AAR library to run in this app -->
+        <service android:name="edu.usf.csee.trackingsteps.svcs.DataCollectorService" />
     </application>
 
 

@@ -16,12 +16,6 @@
 
 package com.example.android.batchstepsensor;
 
-import android.app.Activity;
-import android.content.pm.PackageManager;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 
@@ -30,6 +24,11 @@ import com.example.android.batchstepsensor.cardstream.CardStream;
 import com.example.android.batchstepsensor.cardstream.CardStreamFragment;
 import com.example.android.batchstepsensor.cardstream.OnCardClickListener;
 import com.example.android.common.logger.Log;
+
+import edu.usf.csee.hardware.Sensor;
+import edu.usf.csee.hardware.SensorEvent;
+import edu.usf.csee.hardware.SensorEventListener;
+import edu.usf.csee.hardware.SensorManager;
 
 public class BatchStepSensorFragment extends Fragment implements OnCardClickListener {
 
@@ -112,12 +111,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
             // Prepare all cards and show the intro card.
             initialiseCards();
             showIntroCard();
-            // Show the registration card if the hardware is supported, show an error otherwise
-            if (isKitkatWithStepSensor()) {
-                showRegisterCard();
-            } else {
-                showErrorCard();
-            }
+            showRegisterCard();
         }
     }
 
@@ -127,28 +121,6 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
 
         // Unregister the listener when the application is paused
         unregisterListeners();
-
-    }
-
-    /**
-     * Returns true if this device is supported. It needs to be running Android KitKat (4.4) or
-     * higher and has a step counter and step detector sensor.
-     * This check is useful when an app provides an alternative implementation or different
-     * functionality if the step sensors are not available or this code runs on a platform version
-     * below Android KitKat. If this functionality is required, then the minSDK parameter should
-     * be specified appropriately in the AndroidManifest.
-     *
-     * @return True iff the device can run this sample
-     */
-    private boolean isKitkatWithStepSensor() {
-
-        // Require at least Android KitKat
-        int currentApiVersion = android.os.Build.VERSION.SDK_INT;
-        // Check that the device supports the step counter and detector sensors
-        PackageManager packageManager = getActivity().getPackageManager();
-        return currentApiVersion >= android.os.Build.VERSION_CODES.KITKAT
-                && packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_STEP_COUNTER)
-                && packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_STEP_DETECTOR);
 
     }
 
@@ -251,8 +223,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         }
 
         // Get the default sensor for the sensor type from the SenorManager
-        SensorManager sensorManager =
-                (SensorManager) getActivity().getSystemService(Activity.SENSOR_SERVICE);
+        SensorManager sensorManager = SensorManager.getSystemService(getActivity());
         // sensorType is either Sensor.TYPE_STEP_COUNTER or Sensor.TYPE_STEP_DETECTOR
         Sensor sensor = sensorManager.getDefaultSensor(sensorType);
 
@@ -286,8 +257,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
      */
     private void unregisterListeners() {
 
-        SensorManager sensorManager =
-                (SensorManager) getActivity().getSystemService(Activity.SENSOR_SERVICE);
+        SensorManager sensorManager = SensorManager.getSystemService(getActivity());
         sensorManager.unregisterListener(mListener);
         Log.i(TAG, "Sensor listener unregistered.");
 
@@ -389,7 +359,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
 
     /**
      * Returns a string describing the sensor delays recorded in
-     * {@link #recordDelay(android.hardware.SensorEvent)}.
+     * {@link #recordDelay(edu.usf.csee.hardware.SensorEvent)}.
      *
      * @return
      */
