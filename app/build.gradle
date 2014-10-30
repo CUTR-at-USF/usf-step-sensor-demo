@@ -10,9 +10,15 @@ buildscript {
 
 apply plugin: 'android'
 
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
 
 dependencies {
-    compile fileTree(dir: 'libs', include: '*.jar')
+    // USF step sensors library (not included in the Git repo - please contact us to obtain the AAR file)
+    compile(name: 'library', ext: 'aar')
     // Add the support lib that is appropriate for SDK 19
     compile "com.android.support:support-v13:19.1.+"
 
