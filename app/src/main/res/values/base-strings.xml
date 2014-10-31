@@ -16,7 +16,7 @@
 
 
 <resources>
-    <string name="app_name">USF Step Sensor Demo</string>
+    <string name="app_name">Android Step Sensor Demo</string>
     <string name="intro_message">
         <![CDATA[
         
