@@ -21,12 +21,7 @@
         <![CDATA[
         
             
-            This sample demonstrates the use of the USF step counter sensor.
-            \n\n It shows how to register a SensorEventListener for the USF sensor.
-            \n\n The step counter returns the total number of steps since a listener was first
-            registered for this sensor. The sensor only count steps while a listener is registered.
-            This sample only covers the basic case, where a listener is only registered while the
-            app is running.
+            This sample demonstrates the use of the Android step sensors.
         
         ]]>
     </string>
