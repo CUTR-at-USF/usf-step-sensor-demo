@@ -38,6 +38,10 @@ android {
 
     buildToolsVersion "19.1.0"
 
+    defaultConfig {
+        applicationId "edu.usf.csee.trackingsteps.demo"
+    }
+
     sourceSets {
         main {
             dirs.each { dir ->
