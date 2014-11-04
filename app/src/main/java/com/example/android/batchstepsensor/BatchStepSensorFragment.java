@@ -16,7 +16,9 @@
 
 package com.example.android.batchstepsensor;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 
 import com.example.android.batchstepsensor.cardstream.Card;
@@ -24,6 +26,8 @@ import com.example.android.batchstepsensor.cardstream.CardStream;
 import com.example.android.batchstepsensor.cardstream.CardStreamFragment;
 import com.example.android.batchstepsensor.cardstream.OnCardClickListener;
 import com.example.android.common.logger.Log;
+
+import java.util.concurrent.TimeUnit;
 
 import edu.usf.csee.hardware.Sensor;
 import edu.usf.csee.hardware.SensorEvent;
@@ -81,7 +85,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     // Number of events to keep in queue and display on card
     private static final int EVENT_QUEUE_LENGTH = 10;
     // List of timestamps when sensor events occurred
-    private float[] mEventDelays = new float[EVENT_QUEUE_LENGTH];
+    private long[] mEventDelays = new long[EVENT_QUEUE_LENGTH];
 
     // number of events in event list
     private int mEventLength = 0;
@@ -272,7 +276,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         mSteps = 0;
         mCounterSteps = 0;
         mEventLength = 0;
-        mEventDelays = new float[EVENT_QUEUE_LENGTH];
+        mEventDelays = new long[EVENT_QUEUE_LENGTH];
         mPreviousCounterSteps = 0;
 
     }
@@ -305,6 +309,45 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                         "New step detected by STEP_DETECTOR sensor. Total step count: " + mSteps);
 
             } else if (event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {
+                /**
+                 *                      ** USF TYPE_STEP_COUNTER sensor **
+                 *
+                 * TYPE_STEP_COUNTER values are defined in Android as:
+                 *
+                 *     event.values[0] = the number of steps taken by the user since the last reboot while
+                 *     activated. The value is returned as a float (with the fractional part set to zero).
+                 *     The timestamp of the event is set to the time when the last step for that event was
+                 *     taken.
+                 *
+                 * The Android definition of event.timestamp is unclear
+                 * (see https://code.google.com/p/android/issues/detail?id=7981).
+                 *
+                 * For the USF sensors, the event.timestamp values is set to the time when the last step for
+                 * that event was taken, in nanoseconds and as the SystemClock.elapsedRealtimeNanos() value
+                 * (i.e., elapsed nanoseconds since last boot, including time spent in sleep).  For API levels,
+                 * less than 17 (Build.VERSION_CODES.JELLY_BEAN_MR1), we use SystemClock.elapsedRealtime(),
+                 * converted to nanoseconds.
+                 *
+                 * Since the USF step counter is implemented in software at the application level, it will be
+                 * reset whenever the Service collecting the data stops and this class is GC'd.  This MAY be
+                 * sooner than on reboot.
+                 *
+                 * Since the USF step counter also has an orientation for each step, we add them as
+                 * elements event.values[1] to event.values[X], where X is the number of samples since
+                 * the last notification.  So, the total array size is X + 1.
+                 *
+                 * For example, if there are 3 steps taken since the last time that listeners were notified
+                 * with the total step count of 5:
+                 * - Step A, orientation 25
+                 * - Step B, orientation 30
+                 * - Step C, orientation 45
+                 *
+                 * event.values would contain the following four values:
+                 * values[0] = 8;   // Total step counter since service was started
+                 * values[1] = 25;  // orientation for Step A
+                 * values[2] = 30;  // orientation for Step B
+                 * values[3] = 45;  // orientation for Step C
+                 */
 
                 /*
                 A step counter event contains the total number of steps since the listener
@@ -342,12 +385,31 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     /**
      * Records the delay for the event.
      *
+     * The exact Android definition of event.timestamp is unclear
+     * (see https://code.google.com/p/android/issues/detail?id=7981).
+     *
+     * For the USF sensors, the event.timestamp values is set to the time when the last step for
+     * that event was taken, in nanoseconds and as the SystemClock.elapsedRealtimeNanos() value
+     * (i.e., elapsed nanoseconds since last boot, including time spent in sleep).  For API levels,
+     * less than 17 (Build.VERSION_CODES.JELLY_BEAN_MR1), we use SystemClock.elapsedRealtime(),
+     * converted to nanoseconds.
+     *
      * @param event
      */
     private void recordDelay(SensorEvent event) {
-        // Calculate the delay from when event was recorded until it was received here in ms
-        // Event timestamp is recorded in us accuracy, but ms accuracy is sufficient here
-        mEventDelays[mEventData] = System.currentTimeMillis() - (event.timestamp / 1000000L);
+        // Calculate the delay from when event was recorded until it was received here, in ms
+        final long timeDiffNano;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            timeDiffNano = SystemClock.elapsedRealtimeNanos() - event.timestamp;
+        } else {
+            timeDiffNano = SystemClock.elapsedRealtime() - (TimeUnit.NANOSECONDS.toMillis(event.timestamp));
+        }
+
+        // Convert from nanoseconds to milliseconds, and store
+        mEventDelays[mEventData] = TimeUnit.NANOSECONDS.toMillis(timeDiffNano);
+
+        Log.d(TAG, "Age of data = " + mEventDelays[mEventData] + "ms");
 
         // Increment length counter
         mEventLength = Math.min(EVENT_QUEUE_LENGTH, mEventLength + 1);
@@ -373,8 +435,9 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                 mDelayStringBuffer.append(", ");
             }
             final int index = (mEventData + i) % EVENT_QUEUE_LENGTH;
+            Log.d(TAG, "Delay(" + index + ")= " + mEventDelays[index] + "ms");
             final float delay = mEventDelays[index] / 1000f; // convert delay from ms into s
-            mDelayStringBuffer.append(String.format("%1.1f", delay));
+            mDelayStringBuffer.append(String.format("%.2f", delay));
         }
 
         return mDelayStringBuffer.toString();
