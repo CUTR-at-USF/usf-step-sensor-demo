@@ -122,10 +122,10 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
+    public void onDestroy() {
+        super.onDestroy();
 
-        // Unregister the listener when the application is paused
+        // Unregister the listener when the application is destroyed
         unregisterListeners();
     }
 
