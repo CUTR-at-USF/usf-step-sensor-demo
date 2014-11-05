@@ -16,7 +16,7 @@ This is the sample project that demonstrates the USF step sensor technology.
 1. Download and install the latest version of [Android Studio](http://developer.android.com/sdk/installing/studio.html).
 2. Run Android Studio (Windows users may need to `Run as administator` when installing Android SDK components).
 3. At the welcome screen select `Import Project`, browse to the location of this repository and double-click it.
-4. Place the library.aar file (not included in repo) in the `usf-step-sensor-demo/app/libs` directory.
+4. Place the library.aar file (not included in repo) in the `usf-step-sensor-demo/app/libs` directory.  You may need to click on the "Sync Project with Gradle files" after doing this for the project to recognize the AAR file.
 5. Open the Android SDK Manager (Tools->Android->SDK Manager) and under the currently used SDK version (see `compileSdkVersion` in [`app/build.gradle`](app/build.gradle)) add a checkmark next to `Google APIs` then select `Install n packages`. `n` may be 1 or more if other updates are available.
 6. Connect a [debugging enabled](https://developer.android.com/tools/device.html) Android device to your computer or setup an Android Virtual Device (Tools->Andorid->AVD Manager).
 7. Click the green play button (or Alt+Shift+F10) to build and run the project!
