@@ -125,7 +125,6 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
 
         // Unregister the listener when the application is paused
         unregisterListeners();
-
     }
 
     /**
@@ -142,7 +141,6 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     public void onCardClick(int cardActionId, String cardTag) {
 
         switch (cardActionId) {
-
             // Register Step Counter card
             case ACTION_REGISTER_COUNT_NOBATCHING:
                 registerEventListener(BATCH_LATENCY_0, Sensor.TYPE_STEP_COUNTER);
@@ -252,8 +250,6 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
 
         // Show the explanation card
         getCardStream().showCard(CARD_EXPLANATION);
-
-
     }
 
     /**
@@ -449,13 +445,11 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
      */
     @Override
     public void onSaveInstanceState(Bundle outState) {
-
         super.onSaveInstanceState(outState);
         // Store all variables required to restore the state of the application
         outState.putInt(BUNDLE_LATENCY, mMaxDelay);
         outState.putInt(BUNDLE_STATE, mState);
         outState.putInt(BUNDLE_STEPS, mSteps);
-
     }
 
     @Override
@@ -478,7 +472,6 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                 registerEventListener(mMaxDelay, Sensor.TYPE_STEP_COUNTER);
             }
         }
-
     }
 
     /**
@@ -509,7 +502,6 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
 
         // Show the counting card and make it undismissable
         getCardStream().showCard(CARD_COUNTING, false);
-
     }
 
     /**
