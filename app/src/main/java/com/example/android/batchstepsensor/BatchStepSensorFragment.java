@@ -260,25 +260,20 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
      * Unregisters the sensor listener if it is registered.
      */
     private void unregisterListeners() {
-
         SensorManager sensorManager = SensorManager.getSystemService(getActivity());
         sensorManager.unregisterListener(mListener);
         Log.i(TAG, "Sensor listener unregistered.");
-
-
     }
 
     /**
      * Resets the step counter by clearing all counting variables and lists.
      */
     private void resetCounter() {
-
         mSteps = 0;
         mCounterSteps = 0;
         mEventLength = 0;
         mEventDelays = new long[EVENT_QUEUE_LENGTH];
         mPreviousCounterSteps = 0;
-
     }
 
 
@@ -388,10 +383,10 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
 
     /**
      * Records the delay for the event.
-     *
+     * <p/>
      * The exact Android definition of event.timestamp is unclear
      * (see https://code.google.com/p/android/issues/detail?id=7981).
-     *
+     * <p/>
      * For the USF sensors, the event.timestamp values is set to the time when the last step for
      * that event was taken, in nanoseconds and as the SystemClock.elapsedRealtimeNanos() value
      * (i.e., elapsed nanoseconds since last boot, including time spent in sleep).  For API levels,
