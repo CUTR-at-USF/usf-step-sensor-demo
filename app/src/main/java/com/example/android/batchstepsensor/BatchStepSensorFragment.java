@@ -97,6 +97,8 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     // Value of the step counter sensor when the listener was registered.
     // (Total steps are calculated from this value.)
     private int mCounterSteps = 0;
+    // Used to detect whether onSensorChanged() has been previously called for TYPE_STEP_COUNTER
+    private boolean mFirstExecution = true;
     // Steps counted by the step counter previously. Used to keep counter consistent across rotation
     // changes
     private int mPreviousCounterSteps = 0;
@@ -265,6 +267,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
      * Resets the step counter by clearing all counting variables and lists.
      */
     private void resetCounter() {
+        mFirstExecution = true;
         mSteps = 0;
         mCounterSteps = 0;
         mEventLength = 0;
@@ -347,12 +350,15 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                 /*
                 A step counter event contains the total number of steps since the listener
                 was first registered. We need to keep track of this initial value to calculate the
-                number of steps taken, as the first value a listener receives is undefined.
+                number of steps taken.
                  */
-                if (mCounterSteps < 1) {
+                if (mFirstExecution) {
                     // initial value
                     mCounterSteps = (int) event.values[0];
+                    mFirstExecution = false;
                 }
+
+                Log.d(TAG, "event.values[0]=" + event.values[0]);
 
                 // Calculate steps taken based on first counter value received.
                 mSteps = (int) event.values[0] - mCounterSteps;
