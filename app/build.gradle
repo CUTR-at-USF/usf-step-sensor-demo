@@ -11,6 +11,7 @@ buildscript {
 apply plugin: 'android'
 
 repositories {
+    mavenCentral()
     flatDir {
         dirs 'libs'
     }
@@ -21,8 +22,8 @@ dependencies {
     compile(name: 'library', ext: 'aar')
     // Add the support lib that is appropriate for SDK 19
     compile "com.android.support:support-v13:19.1.+"
-
-
+    // A CircularFifoQueue to hold sensor orientation and delay values
+    compile 'org.apache.commons:commons-collections4:4.0'
 }
 
 // The sample build uses multiple directories to

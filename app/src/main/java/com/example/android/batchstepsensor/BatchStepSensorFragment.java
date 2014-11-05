@@ -27,6 +27,8 @@ import com.example.android.batchstepsensor.cardstream.CardStreamFragment;
 import com.example.android.batchstepsensor.cardstream.OnCardClickListener;
 import com.example.android.common.logger.Log;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
+
 import java.util.concurrent.TimeUnit;
 
 import edu.usf.csee.hardware.Sensor;
@@ -85,13 +87,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     // Number of events to keep in queue and display on card
     private static final int EVENT_QUEUE_LENGTH = 10;
     // List of timestamps when sensor events occurred
-    private long[] mEventDelays = new long[EVENT_QUEUE_LENGTH];
-
-    // number of events in event list
-    private int mEventLength = 0;
-    // pointer to next entry in sensor event list
-    private int mEventData = 0;
-
+    private CircularFifoQueue<Long> mEventDelays = new CircularFifoQueue<Long>(EVENT_QUEUE_LENGTH);
     // Steps counted in current session
     private int mSteps = 0;
     // Value of the step counter sensor when the listener was registered.
@@ -270,8 +266,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         mFirstExecution = true;
         mSteps = 0;
         mCounterSteps = 0;
-        mEventLength = 0;
-        mEventDelays = new long[EVENT_QUEUE_LENGTH];
+        mEventDelays = new CircularFifoQueue<Long>(EVENT_QUEUE_LENGTH);
         mPreviousCounterSteps = 0;
     }
 
@@ -297,7 +292,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                 getCardStream().getCard(CARD_COUNTING)
                         .setTitle(getString(R.string.counting_title, mSteps))
                         .setDescription(getString(R.string.counting_description,
-                                getString(R.string.sensor_detector), mMaxDelay, delayString));
+                                getString(R.string.sensor_detector), mMaxDelay, EVENT_QUEUE_LENGTH, delayString));
 
                 Log.i(TAG,
                         "New step detected by STEP_DETECTOR sensor. Total step count: " + mSteps);
@@ -371,7 +366,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                 getCardStream().getCard(CARD_COUNTING)
                         .setTitle(getString(R.string.counting_title, mSteps))
                         .setDescription(getString(R.string.counting_description,
-                                getString(R.string.sensor_counter), mMaxDelay, delayString));
+                                getString(R.string.sensor_counter), mMaxDelay, EVENT_QUEUE_LENGTH, delayString));
                 Log.i(TAG, "New step detected by STEP_COUNTER sensor. Total step count: " + mSteps);
 
             }
@@ -398,6 +393,12 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
      * @param event
      */
     private void recordDelay(SensorEvent event) {
+        if (mFirstExecution && event.sensor.getType() == Sensor.TYPE_STEP_COUNTER) {
+            // We want to discard the first value, since its not a new step, just a notification
+            // to the listener of the current step count
+            return;
+        }
+
         // Calculate the delay from when event was recorded until it was received here, in ms
         final long timeDiffNano;
 
@@ -408,14 +409,9 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         }
 
         // Convert from nanoseconds to milliseconds, and store
-        mEventDelays[mEventData] = TimeUnit.NANOSECONDS.toMillis(timeDiffNano);
+        mEventDelays.add(TimeUnit.NANOSECONDS.toMillis(timeDiffNano));
 
-        Log.d(TAG, "Age of data = " + mEventDelays[mEventData] + "ms");
-
-        // Increment length counter
-        mEventLength = Math.min(EVENT_QUEUE_LENGTH, mEventLength + 1);
-        // Move pointer to the next (oldest) location
-        mEventData = (mEventData + 1) % EVENT_QUEUE_LENGTH;
+        Log.d(TAG, "Age of most recent data = " + TimeUnit.NANOSECONDS.toMillis(timeDiffNano) + "ms");
     }
 
     private final StringBuffer mDelayStringBuffer = new StringBuffer();
@@ -430,15 +426,12 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         // Empty the StringBuffer
         mDelayStringBuffer.setLength(0);
 
-        // Loop over all recorded delays and append them to the buffer as a decimal
-        for (int i = 0; i < mEventLength; i++) {
-            if (i > 0) {
+        for (Long delay : mEventDelays) {
+            if (delay != mEventDelays.peek()) {
                 mDelayStringBuffer.append(", ");
             }
-            final int index = (mEventData + i) % EVENT_QUEUE_LENGTH;
-            Log.d(TAG, "Delay(" + index + ")= " + mEventDelays[index] + "ms");
-            final float delay = mEventDelays[index] / 1000f; // convert delay from ms into s
-            mDelayStringBuffer.append(String.format("%.2f", delay));
+            // Convert delay from ms into s, and format to 2 decimal places
+            mDelayStringBuffer.append(String.format("%.2f", delay / 1000f));
         }
 
         return mDelayStringBuffer.toString();
@@ -504,7 +497,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         // Set initial text
         getCardStream().getCard(CARD_COUNTING)
                 .setTitle(getString(R.string.counting_title, 0))
-                .setDescription(getString(R.string.counting_description, sensor, mMaxDelay, "-"));
+                .setDescription(getString(R.string.counting_description, sensor, mMaxDelay, EVENT_QUEUE_LENGTH, "-"));
 
         // Show the counting card and make it undismissable
         getCardStream().showCard(CARD_COUNTING, false);
