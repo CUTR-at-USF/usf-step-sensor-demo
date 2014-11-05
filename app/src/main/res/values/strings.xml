@@ -56,7 +56,7 @@
     <string name="sensor_counter">Step Counter</string>
     <string name="sensor_detector">Step Detector</string>
     <string name="counting_description">Sensor: %1$s\nMax sensor event delay: %2$,d \u00B5s\nAge of
-        last %3$d events, in s (ordered oldest to newest):\n%4$s,\nDirection of last %5$d steps
+        last %3$d events, in s (ordered oldest to newest):\n%4$s\nDirection of last %5$d steps
         (ordered oldest to newest):\n%6$s
     </string>
 
