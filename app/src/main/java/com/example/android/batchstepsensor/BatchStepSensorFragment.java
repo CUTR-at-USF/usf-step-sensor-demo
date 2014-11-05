@@ -328,6 +328,10 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                  * less than 17 (Build.VERSION_CODES.JELLY_BEAN_MR1), we use SystemClock.elapsedRealtime(),
                  * converted to nanoseconds.
                  *
+                 * When a listener is first registered, onSensorChanged() will immediately be called with
+                 * the current step total (which may be 0), so the listener can initialize itself and
+                 * count the number of steps that happen since initial registration.
+                 *
                  * Since the USF step counter is implemented in software at the application level, it will be
                  * reset whenever the Service collecting the data stops and this class is GC'd.  This MAY be
                  * sooner than on reboot.
