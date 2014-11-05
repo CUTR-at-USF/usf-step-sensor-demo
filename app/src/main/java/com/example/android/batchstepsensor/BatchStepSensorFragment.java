@@ -35,6 +35,7 @@ import edu.usf.csee.hardware.Sensor;
 import edu.usf.csee.hardware.SensorEvent;
 import edu.usf.csee.hardware.SensorEventListener;
 import edu.usf.csee.hardware.SensorManager;
+import edu.usf.csee.trackingsteps.data.Orientation;
 
 public class BatchStepSensorFragment extends Fragment implements OnCardClickListener {
 
@@ -88,6 +89,11 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     private static final int EVENT_QUEUE_LENGTH = 10;
     // List of timestamps when sensor events occurred
     private CircularFifoQueue<Long> mEventDelays = new CircularFifoQueue<Long>(EVENT_QUEUE_LENGTH);
+    // Number of orientations to keep in queue and display on card
+    private static final int ORIENTATION_QUEUE_LENGTH = 15;
+    // List of orientations for the last ORIENTATION_QUEUE_LENGTH steps
+    private CircularFifoQueue<Float> mStepOrientations = new CircularFifoQueue<Float>(ORIENTATION_QUEUE_LENGTH);
+
     // Steps counted in current session
     private int mSteps = 0;
     // Value of the step counter sensor when the listener was registered.
@@ -267,6 +273,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         mSteps = 0;
         mCounterSteps = 0;
         mEventDelays = new CircularFifoQueue<Long>(EVENT_QUEUE_LENGTH);
+        mStepOrientations = new CircularFifoQueue<Float>(ORIENTATION_QUEUE_LENGTH);
         mPreviousCounterSteps = 0;
     }
 
@@ -286,13 +293,20 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                 // A step detector event is received for each step.
                 // This means we need to count steps ourselves
 
-                mSteps += event.values.length;
+                mSteps += event.values[0];
+
+                // store the step orientations for this event
+                recordOrientations(event);
+
+                final String orientationString = getOrientationString();
 
                 // Update the card with the latest step count
                 getCardStream().getCard(CARD_COUNTING)
                         .setTitle(getString(R.string.counting_title, mSteps))
                         .setDescription(getString(R.string.counting_description,
-                                getString(R.string.sensor_detector), mMaxDelay, EVENT_QUEUE_LENGTH, delayString));
+                                getString(R.string.sensor_detector), mMaxDelay,
+                                EVENT_QUEUE_LENGTH, delayString,
+                                ORIENTATION_QUEUE_LENGTH, orientationString));
 
                 Log.i(TAG,
                         "New step detected by STEP_DETECTOR sensor. Total step count: " + mSteps);
@@ -362,13 +376,19 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
                 // This is needed to keep the counter consistent across rotation changes.
                 mSteps = mSteps + mPreviousCounterSteps;
 
+                // store the step orientations for this event
+                recordOrientations(event);
+
+                final String orientationString = getOrientationString();
+
                 // Update the card with the latest step count
                 getCardStream().getCard(CARD_COUNTING)
                         .setTitle(getString(R.string.counting_title, mSteps))
                         .setDescription(getString(R.string.counting_description,
-                                getString(R.string.sensor_counter), mMaxDelay, EVENT_QUEUE_LENGTH, delayString));
-                Log.i(TAG, "New step detected by STEP_COUNTER sensor. Total step count: " + mSteps);
-
+                                getString(R.string.sensor_counter), mMaxDelay,
+                                EVENT_QUEUE_LENGTH, delayString,
+                                ORIENTATION_QUEUE_LENGTH, orientationString));
+                Log.i(TAG, "New step(s) detected by STEP_COUNTER sensor. Total step count: " + mSteps);
             }
         }
 
@@ -438,6 +458,62 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     }
 
     /**
+     * Records the step orientations for the event.
+     * <p/>
+     * Since the USF step counter also has an orientation for each step, we add them as
+     * elements event.values[1] to event.values[X], where X is the number of samples since
+     * the last notification.  So, the total array size is X + 1.
+     *
+     * For example, if there are 3 steps taken since the last time that listeners were notified
+     * with the total step count of 5:
+     * - Step A, orientation 25
+     * - Step B, orientation 30
+     * - Step C, orientation 45
+     *
+     * event.values would contain the following four values:
+     * values[0] = 8;   // Total step counter since service was started
+     * values[1] = 25;  // orientation for Step A
+     * values[2] = 30;  // orientation for Step B
+     * values[3] = 45;  // orientation for Step C
+     *
+     * @param event
+     */
+    private void recordOrientations(SensorEvent event) {
+        if (event.values.length > 1) {
+            // There is at least one orientation value, starting at event.values[1]
+            for (int i = 1; i < event.values.length; i++) {
+                Log.d(TAG, "Raw orientation for new step " + i + "=" + event.values[i]);
+                Orientation orientation = Orientation.toDirection(event.values[i]);
+                Log.d(TAG, "Orientation for new step " + i + "=" + orientation.text);
+                mStepOrientations.add(event.values[i]);
+            }
+        }
+    }
+
+    private final StringBuffer mOrientationStringBuffer = new StringBuffer();
+
+    /**
+     * Returns a string describing the orientations recorded in
+     * {@link #recordOrientations(edu.usf.csee.hardware.SensorEvent)}.
+     *
+     * @return
+     */
+    private String getOrientationString() {
+        // Empty the StringBuffer
+        mOrientationStringBuffer.setLength(0);
+
+        for (Float orient : mStepOrientations) {
+            if (orient != mStepOrientations.peek()) {
+                mOrientationStringBuffer.append(", ");
+            }
+
+            mOrientationStringBuffer.append(Orientation.toDirection(orient));
+        }
+
+        return mOrientationStringBuffer.toString();
+    }
+
+    /**
      * Records the state of the application into the {@link android.os.Bundle}.
      *
      * @param outState
@@ -497,7 +573,9 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
         // Set initial text
         getCardStream().getCard(CARD_COUNTING)
                 .setTitle(getString(R.string.counting_title, 0))
-                .setDescription(getString(R.string.counting_description, sensor, mMaxDelay, EVENT_QUEUE_LENGTH, "-"));
+                .setDescription(getString(R.string.counting_description, sensor, mMaxDelay,
+                        EVENT_QUEUE_LENGTH, "-",
+                        ORIENTATION_QUEUE_LENGTH, "-"));
 
         // Show the counting card and make it undismissable
         getCardStream().showCard(CARD_COUNTING, false);
