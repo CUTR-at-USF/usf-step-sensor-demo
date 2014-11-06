@@ -484,7 +484,7 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
             for (int i = 1; i < event.values.length; i++) {
                 Log.d(TAG, "Raw orientation for new step " + i + "=" + event.values[i]);
                 Orientation orientation = Orientation.toDirection(event.values[i]);
-                Log.d(TAG, "Orientation for new step " + i + "=" + orientation.text);
+                Log.d(TAG, "Direction for new step " + i + "=" + orientation.text);
                 mStepOrientations.add(event.values[i]);
             }
         }
