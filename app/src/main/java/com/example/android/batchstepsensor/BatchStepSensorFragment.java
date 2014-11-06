@@ -36,6 +36,7 @@ import edu.usf.csee.hardware.SensorEvent;
 import edu.usf.csee.hardware.SensorEventListener;
 import edu.usf.csee.hardware.SensorManager;
 import edu.usf.csee.trackingsteps.data.Orientation;
+import edu.usf.csee.trackingsteps.util.TimeUtil;
 
 public class BatchStepSensorFragment extends Fragment implements OnCardClickListener {
 
@@ -108,6 +109,11 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     private int mState = STATE_OTHER;
     // When a listener is registered, the batch sensor delay in microseconds
     private int mMaxDelay = 0;
+
+    // Keep track of avg time between updates
+    private long mLastUpdateTime = Long.MIN_VALUE;
+    private long mTotalTimeDiff = 0;  // in nanoseconds
+    private int mNumUpdates = 0;
 
     @Override
     public void onResume() {
@@ -270,6 +276,9 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
      */
     private void resetCounter() {
         mFirstExecution = true;
+        mLastUpdateTime = Long.MIN_VALUE;
+        mTotalTimeDiff = 0;
+        mNumUpdates = 0;
         mSteps = 0;
         mCounterSteps = 0;
         mEventDelays = new CircularFifoQueue<Long>(EVENT_QUEUE_LENGTH);
@@ -284,6 +293,8 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
     private final SensorEventListener mListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
+            // Record time between updates
+            recordTimeBetweenUpdates();
 
             // store the delay of this event
             recordDelay(event);
@@ -397,6 +408,23 @@ public class BatchStepSensorFragment extends Fragment implements OnCardClickList
 
         }
     };
+
+    /**
+     * Keeps track of the average time between updates
+     */
+    public void recordTimeBetweenUpdates() {
+        long currentTime = TimeUtil.getElapsedRealtimeNanos();
+        if (mLastUpdateTime != Long.MIN_VALUE) {
+            long timeDiffNanos = currentTime - mLastUpdateTime;
+            mTotalTimeDiff += timeDiffNanos;
+            mNumUpdates++;
+
+            float avgTimeDiffSec = (mTotalTimeDiff / mNumUpdates) / 1000000000f;
+
+            Log.d(TAG, "Avg time between updates = " + String.format("%.2f", avgTimeDiffSec) + "s");
+        }
+        mLastUpdateTime = currentTime;
+    }
 
     /**
      * Records the delay for the event.
