@@ -36,11 +36,14 @@ List<String> dirs = [
 
 android {
     compileSdkVersion 19
-
     buildToolsVersion "19.1.0"
 
     defaultConfig {
         applicationId "edu.usf.csee.trackingsteps.demo"
+        minSdkVersion 15
+        targetSdkVersion 19
+        versionCode 1
+        versionName "1.0"
     }
 
     sourceSets {
@@ -52,7 +55,6 @@ android {
         }
         androidTest.setRoot('tests')
         androidTest.java.srcDirs = ['tests/src']
-
     }
 }
 
